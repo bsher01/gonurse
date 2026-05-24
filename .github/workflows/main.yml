@@ -1,0 +1,21 @@
+name: Unzip Source Code
+
+on:
+  workflow_dispatch:
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Unzip Files
+        run: |
+          unzip -o *.zip -d .
+          rm *.zip
+
+      - name: Commit & Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Unzipped project files automatically"
