@@ -12,10 +12,13 @@ jobs:
 
       - name: Unzip Files
         run: |
-          unzip -o *.zip -d .
-          rm *.zip
+          sudo apt-get install -y unzip
+          unzip -o gonurse-source.zip -d .
+          rm -f gonurse-source.zip
 
       - name: Commit & Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Unzipped project files automatically"
+          commit_user_name: "GitHub Actions"
+          commit_user_email: "actions@github.com"
