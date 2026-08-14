@@ -15,22 +15,23 @@ jobs:
 
       - name: Extract Project ZIP
         run: |
-          # فك ضغط الملف
+          mkdir -p /tmp/app_build
           if [ -f gonurse.zip ]; then
-            unzip -o gonurse.zip -d extracted_app
+            unzip -o gonurse.zip -d /tmp/app_build
           elif [ -f gonurse-source.zip ]; then
-            unzip -o gonurse-source.zip -d extracted_app
+            unzip -o gonurse-source.zip -d /tmp/app_build
           fi
           
-          # نقل الملفات للجذر إن كانت داخل مجلد فرعي
-          if [ -d extracted_app ]; then
-            cp -r extracted_app/* . 2>/dev/null || true
-            cp -r extracted_app/.* . 2>/dev/null || true
-            # إذا وجد مجلد فرعي متداخل
-            SUBDIR=$(find extracted_app -maxdepth 1 -mindepth 1 -type d | head -n 1)
-            if [ -n "$SUBDIR" ] && [ -f "$SUBDIR/build.gradle.kts" ]; then
-              cp -r "$SUBDIR"/* .
+          # إذا كانت الملفات داخل مجلد فرعي متداخل
+          if [ ! -f /tmp/app_build/settings.gradle.kts ]; then
+            NESTED_DIR=$(find /tmp/app_build -name "settings.gradle.kts" -exec dirname {} \;)
+            if [ -n "$NESTED_DIR" ]; then
+              cp -r "$NESTED_DIR"/* .
+              cp -r "$NESTED_DIR"/.* . 2>/dev/null || true
             fi
+          else
+            cp -r /tmp/app_build/* .
+            cp -r /tmp/app_build/.* . 2>/dev/null || true
           fi
 
       - name: Set up JDK 17
@@ -39,11 +40,15 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - name: Ensure Gradle Wrapper Exists
+        run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 8.9
+          fi
+          chmod +x gradlew
 
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon
+        run: ./gradlew assembleDebug -x test -x lint --no-daemon --stacktrace
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
