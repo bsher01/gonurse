@@ -22,7 +22,6 @@ jobs:
             unzip -o gonurse-source.zip -d /tmp/app_build
           fi
           
-          # إذا كانت الملفات داخل مجلد فرعي متداخل
           if [ ! -f /tmp/app_build/settings.gradle.kts ]; then
             NESTED_DIR=$(find /tmp/app_build -name "settings.gradle.kts" -exec dirname {} \;)
             if [ -n "$NESTED_DIR" ]; then
@@ -40,7 +39,40 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Ensure Gradle Wrapper Exists
+      - name: Setup Dummy Google Services and Env
+        run: |
+          mkdir -p app
+          # إنشاء ملف google-services.json إذا لم يكن موجوداً لمنع فشل بلجن جوجل
+          if [ ! -f app/google-services.json ]; then
+            cat << 'EOF' > app/google-services.json
+            {
+              "project_info": {
+                "project_number": "1234567890",
+                "project_id": "gonurse-2ac77",
+                "storage_bucket": "gonurse-2ac77.appspot.com"
+              },
+              "client": [
+                {
+                  "client_info": {
+                    "mobilesdk_app_id": "1:1234567890:android:abcdef",
+                    "android_client_info": {
+                      "package_name": "com.example"
+                    }
+                  },
+                  "oauth_client": [],
+                  "api_key": [{ "current_key": "AIzaDummyKey" }],
+                  "services": {
+                    "appinvite_service": { "other_platform_oauth_client": [] }
+                  }
+                }
+              ],
+              "configuration_version": "1"
+            }
+          EOF
+          fi
+          touch .env
+
+      - name: Ensure Gradle Wrapper
         run: |
           if [ ! -f gradlew ]; then
             gradle wrapper --gradle-version 8.9
@@ -48,7 +80,7 @@ jobs:
           chmod +x gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug -x test -x lint --no-daemon --stacktrace
+        run: ./gradlew assembleDebug --no-configuration-cache --no-daemon -x test -x lint
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
