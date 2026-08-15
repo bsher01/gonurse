@@ -21,44 +21,40 @@ jobs:
           elif [ -f gonurse-source.zip ]; then
             unzip -o gonurse-source.zip -d /tmp/app_build
           fi
-          
-          if [ ! -f /tmp/app_build/settings.gradle.kts ]; then
-            NESTED_DIR=$(find /tmp/app_build -name "settings.gradle.kts" -exec dirname {} \;)
-            if [ -n "$NESTED_DIR" ]; then
-              cp -r "$NESTED_DIR"/* .
-              cp -r "$NESTED_DIR"/.* . 2>/dev/null || true
-            fi
+
+          NESTED_DIR=$(find /tmp/app_build -name "settings.gradle.kts" -exec dirname {} \; | head -1)
+          if [ -n "$NESTED_DIR" ]; then
+            cp -r "$NESTED_DIR"/. .
           else
-            cp -r /tmp/app_build/* .
-            cp -r /tmp/app_build/.* . 2>/dev/null || true
+            cp -r /tmp/app_build/. .
           fi
 
-      - name: Set up JDK 21
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Valid Google Services and Env
+      - name: Setup Google Services
         run: |
           mkdir -p app
-          cat << 'EOF' > app/google-services.json
+          cat << 'GSEOF' > app/google-services.json
           {
             "project_info": {
-              "project_number": "1234567890",
+              "project_number": "606749018816",
               "project_id": "gonurse-2ac77",
               "storage_bucket": "gonurse-2ac77.appspot.com"
             },
             "client": [
               {
                 "client_info": {
-                  "mobilesdk_app_id": "1:1234567890:android:abcdef",
+                  "mobilesdk_app_id": "1:606749018816:android:gonurse",
                   "android_client_info": {
-                    "package_name": "com.aistudio.gonurse.medcare"
+                    "package_name": "com.aistudio.gonurse.app"
                   }
                 },
                 "oauth_client": [],
-                "api_key": [{ "current_key": "AIzaDummyKey12345" }],
+                "api_key": [{ "current_key": "AIzaSyDummy-ReplaceWithRealKey" }],
                 "services": {
                   "appinvite_service": { "other_platform_oauth_client": [] }
                 }
@@ -66,20 +62,23 @@ jobs:
             ],
             "configuration_version": "1"
           }
-          EOF
+          GSEOF
           touch .env
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.3.1'
+          gradle-version: wrapper
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
 
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon -x test -x lint
+        run: ./gradlew assembleDebug --no-daemon -x test -x lint
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: GoNurse-Debug-APK
           path: app/build/outputs/apk/debug/*.apk
-          retention-days: 7
+          retention-days: 30
