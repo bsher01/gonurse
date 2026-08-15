@@ -65,13 +65,17 @@ jobs:
           GSEOF
           touch .env
 
-      - name: Setup Gradle
+      - name: Setup Gradle Wrapper
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: wrapper
+          gradle-version: '8.7'
 
       - name: Make gradlew executable
-        run: chmod +x gradlew
+        run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version=8.7
+          fi
+          chmod +x gradlew
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon -x test -x lint
