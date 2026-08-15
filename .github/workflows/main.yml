@@ -50,7 +50,7 @@ jobs:
                 "client_info": {
                   "mobilesdk_app_id": "1:606749018816:android:gonurse",
                   "android_client_info": {
-                    "package_name": "com.aistudio.gonurse.app"
+                    "package_name": "com.aistudio.gonurse.medcare"
                   }
                 },
                 "oauth_client": [],
