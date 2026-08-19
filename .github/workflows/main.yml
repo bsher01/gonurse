@@ -13,22 +13,44 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract Project ZIP
+      - name: Extract Any ZIP in Repository
         run: |
+          echo "=== 1. Checking repository files ==="
+          ls -la
+          
           mkdir -p /tmp/app_build
-          if [ -f gonurse.zip ]; then
-            unzip -o gonurse.zip -d /tmp/app_build
-          elif [ -f gonurse-source.zip ]; then
-            unzip -o gonurse-source.zip -d /tmp/app_build
+          
+          # العثور على أي ملف zip موجود في المستودع وفك ضغطه
+          ZIP_FILE=$(find . -maxdepth 2 -type f -name "*.zip" | head -n 1)
+          
+          if [ -n "$ZIP_FILE" ]; then
+            echo "Found ZIP file: $ZIP_FILE"
+            unzip -o "$ZIP_FILE" -d /tmp/app_build
+          else
+            echo "No zip file found, copying root files"
+            cp -r ./* /tmp/app_build/ 2>/dev/null || true
           fi
 
-          # البحث عن مجلد المشروع ونقله للمسار الرئيسي
-          NESTED_DIR=$(find /tmp/app_build -name "settings.gradle.kts" -exec dirname {} \; | head -1)
-          if [ -n "$NESTED_DIR" ]; then
-            cp -r "$NESTED_DIR"/. .
-          else
-            cp -r /tmp/app_build/. .
+          echo "=== 2. Locating settings.gradle or build.gradle ==="
+          # البحث عن مكان ملف إعدادات gradle
+          BUILD_DIR=$(find /tmp/app_build -name "settings.gradle*" -exec dirname {} \; | head -n 1)
+          
+          if [ -z "$BUILD_DIR" ]; then
+            BUILD_DIR=$(find /tmp/app_build -name "build.gradle*" -exec dirname {} \; | head -n 1)
           fi
+          
+          if [ -n "$BUILD_DIR" ]; then
+            echo "Project root found at: $BUILD_DIR"
+            cp -r "$BUILD_DIR"/* .
+            # نسخ الملفات المخفية إن وجدت
+            cp -r "$BUILD_DIR"/.* . 2>/dev/null || true
+          else
+            echo "Direct copy from temp..."
+            cp -r /tmp/app_build/* . 2>/dev/null || true
+          fi
+          
+          echo "=== 3. Current Root Directory Content ==="
+          ls -la
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -36,7 +58,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle Environment
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
