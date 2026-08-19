@@ -22,6 +22,7 @@ jobs:
             unzip -o gonurse-source.zip -d /tmp/app_build
           fi
 
+          # البحث عن مجلد المشروع ونقله للمسار الرئيسي
           NESTED_DIR=$(find /tmp/app_build -name "settings.gradle.kts" -exec dirname {} \; | head -1)
           if [ -n "$NESTED_DIR" ]; then
             cp -r "$NESTED_DIR"/. .
@@ -35,7 +36,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Google Services
+      - name: Setup Gradle Environment
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Setup Google Services & Env
         run: |
           mkdir -p app
           cat << 'GSEOF' > app/google-services.json
@@ -77,20 +83,8 @@ jobs:
             -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
 
-      - name: Setup Gradle Wrapper
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.3.1'
-
-      - name: Make gradlew executable
-        run: |
-          if [ ! -f gradlew ]; then
-            gradle wrapper --gradle-version=9.3.1
-          fi
-          chmod +x gradlew
-
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon -x test -x lint
+        run: gradle assembleDebug --no-daemon -x test -x lint
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
