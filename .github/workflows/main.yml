@@ -2,7 +2,7 @@ name: Build Android APK from ZIP
 
 on:
   push:
-    branches: [ "**" ]
+    branches: [ "*" ]
   workflow_dispatch:
 
 jobs:
@@ -20,14 +20,14 @@ jobs:
           
           mkdir -p /tmp/app_build
           
-          # فك ضغط أي ملف zip حتى لو احتوى على مسافات أو أقواس
+          # فك اي محتوى ضمن مسافات أو أقواس zip كخطأ أو ملف #
           find . -maxdepth 2 -type f -name "*.zip" -exec unzip -o "{}" -d /tmp/app_build \;
           
-          echo "=== 2. Locating settings.gradle or build.gradle ==="
-          BUILD_DIR=$(find /tmp/app_build -name "settings.gradle*" -exec dirname {} \; | head -n 1)
+          echo "=== 2. locating settings.gradle or build.gradle ==="
+          BUILD_DIR=$(find /tmp/app_build -name "settings.gradle" -exec dirname {} \; | head -n 1)
           
           if [ -z "$BUILD_DIR" ]; then
-            BUILD_DIR=$(find /tmp/app_build -name "build.gradle*" -exec dirname {} \; | head -n 1)
+            BUILD_DIR=$(find /tmp/app_build -name "build.gradle" -exec dirname {} \; | head -n 1)
           fi
           
           if [ -n "$BUILD_DIR" ]; then
@@ -48,15 +48,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle (Version 9.3.1)
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.3.1'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
       - name: Setup Google Services & Env
         run: |
           mkdir -p app
-          cat << 'GSEOF' > app/google-services.json
+          cat << 'EOF' > app/google-services.json
           {
             "project_info": {
               "project_number": "606749018816",
@@ -80,7 +78,7 @@ jobs:
             ],
             "configuration_version": "1"
           }
-          GSEOF
+          EOF
           touch .env
 
       - name: Generate Debug Keystore
@@ -96,7 +94,7 @@ jobs:
             -dname "CN=Android Debug,O=Android,C=US"
 
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon -x test -x lint
+        run: ./gradlew assembleDebug --no-daemon -x test -x lint
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
