@@ -79,7 +79,6 @@ jobs:
           }
           EOF
           
-          # إنشاء ملفات الـ env المطلوبة لمنع خطأ الفقدان
           touch .env
           touch .env.example
 
@@ -95,10 +94,19 @@ jobs:
             -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
 
-      - name: Ensure Gradle Wrapper Exists
+      - name: Fix Gradle Wrapper Distribution
         run: |
+          # إجبار استخدام إصدار gradle مستقر وسريع التثبيت لتجنب مشاكل الـ Timeout
+          mkdir -p gradle/wrapper
+          cat << 'EOF' > gradle/wrapper/gradle-wrapper.properties
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.5-bin.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+          
           if [ ! -f "./gradlew" ]; then
-            echo "Gradle wrapper missing, generating one..."
             gradle wrapper
             chmod +x ./gradlew
           else
