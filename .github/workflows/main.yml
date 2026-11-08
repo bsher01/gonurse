@@ -20,14 +20,13 @@ jobs:
           
           mkdir -p /tmp/app_build
           
-          # فك اي محتوى ضمن مسافات أو أقواس zip كخطأ أو ملف #
           find . -maxdepth 2 -type f -name "*.zip" -exec unzip -o "{}" -d /tmp/app_build \;
           
-          echo "=== 2. locating settings.gradle or build.gradle ==="
-          BUILD_DIR=$(find /tmp/app_build -name "settings.gradle" -exec dirname {} \; | head -n 1)
+          echo "=== 2. locating project root ==="
+          BUILD_DIR=$(find /tmp/app_build -name "build.gradle" -exec dirname {} \; | head -n 1)
           
           if [ -z "$BUILD_DIR" ]; then
-            BUILD_DIR=$(find /tmp/app_build -name "build.gradle" -exec dirname {} \; | head -n 1)
+            BUILD_DIR=$(find /tmp/app_build -name "settings.gradle" -exec dirname {} \; | head -n 1)
           fi
           
           if [ -n "$BUILD_DIR" ]; then
@@ -92,6 +91,16 @@ jobs:
             -keysize 2048 \
             -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Ensure Gradle Wrapper Exists
+        run: |
+          if [ ! -f "./gradlew" ]; then
+            echo "Gradle wrapper missing, generating one..."
+            gradle wrapper
+            chmod +x ./gradlew
+          else
+            chmod +x ./gradlew
+          fi
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon -x test -x lint
