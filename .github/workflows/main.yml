@@ -50,7 +50,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Setup Google Services & Env
+      - name: Setup Google Services & Env files
         run: |
           mkdir -p app
           cat << 'EOF' > app/google-services.json
@@ -78,7 +78,10 @@ jobs:
             "configuration_version": "1"
           }
           EOF
+          
+          # إنشاء ملفات الـ env المطلوبة لمنع خطأ الفقدان
           touch .env
+          touch .env.example
 
       - name: Generate Debug Keystore
         run: |
